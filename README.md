@@ -1,124 +1,333 @@
-<h1 align="center">
-  llmcord
-</h1>
+# Gemini Discord Bot
 
-<h3 align="center"><i>
-  Talk to LLMs with your friends!
-</i></h3>
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/7791cc6b-6755-484f-a9e3-0707765b081f" alt="">
-</p>
-
-llmcord transforms Discord into a collaborative LLM frontend. It works with practically any LLM, remote or locally hosted.
+A powerful Discord bot powered by Google's Gemini 2.5 AI models with advanced features like per-server personalization, Google Search integration, and automatic user profiling.
 
 ## Features
 
-### Reply-based chat system:
-Just @ the bot to start a conversation and reply to continue. Build conversations with reply chains!
+### 🤖 Gemini 2.5 Integration
+- **Multiple Models**: Choose between Gemini 2.0 Flash (Experimental) and Gemini Experimental 1206
+- **Google Search Grounding**: Answers enhanced with real-time web search
+- **Vision Support**: Process images from Discord attachments and external URLs
+- **Streaming Responses**: Real-time message updates as the AI generates responses
 
-You can:
-- Branch conversations endlessly
-- Continue other people's conversations
-- @ the bot while replying to ANY message to include it in the conversation
+### 💬 Smart Conversation System
+- **Reply-based Chat**: Start conversations with @ mentions, continue with replies
+- **Message Threading**: Create threads from any message to branch conversations
+- **DM Support**: Private conversations in direct messages
+- **Automatic Context**: Back-to-back messages from the same user are chained together
 
-Additionally:
-- When DMing the bot, conversations continue automatically (no reply required). To start a fresh conversation, just @ the bot. You can still reply to continue from anywhere.
-- You can branch conversations into [threads](https://support.discord.com/hc/en-us/articles/4403205878423-Threads-FAQ). Just create a thread from any message and @ the bot inside to continue.
-- Back-to-back messages from the same user are automatically chained together. Just reply to the latest one and the bot will see all of them.
+### 🎨 Per-Server Customization
+- **Server-Specific Models**: Each server can use a different Gemini model
+- **Custom System Prompts**: Tailor the bot's personality per server
+- **User Profiles**: Automatic user discovery and personalization
+- **Persistent Storage**: All settings saved in JSON files
 
----
+### 👤 User Personalization
+- **Automatic Discovery**: Bot remembers users as they interact
+- **User Descriptions**: Users can describe themselves for personalized responses
+- **Display Names**: Bot uses Discord display names naturally in conversation
+- **Privacy Controls**: Users can view and remove their own data
 
-### Model switching with `/model`:
-![image](https://github.com/user-attachments/assets/568e2f5c-bf32-4b77-ab57-198d9120f3d2)
+### 🔧 Admin Tools
+- `/model` - Switch between Gemini models per server
+- `/prompt` - View, set, or reset the system prompt
+- `/known` - Manage user personalization settings
 
-llmcord supports remote models from:
-- [OpenAI API](https://platform.openai.com/docs/models)
-- [xAI API](https://docs.x.ai/docs/models)
-- [Google Gemini API](https://ai.google.dev/gemini-api/docs/models)
-- [Mistral API](https://docs.mistral.ai/getting-started/models/models_overview)
-- [Groq API](https://console.groq.com/docs/models)
-- [OpenRouter API](https://openrouter.ai/models)
+## Setup Instructions
 
-Or run local models with:
-- [Ollama](https://ollama.com)
-- [LM Studio](https://lmstudio.ai)
-- [vLLM](https://github.com/vllm-project/vllm)
+### Prerequisites
+1. **Discord Bot Token**
+   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
+   - Create a new application
+   - Go to the "Bot" tab and create a bot
+   - Enable "MESSAGE CONTENT INTENT" under Privileged Gateway Intents
+   - Copy the bot token
 
-...Or use any other OpenAI compatible API server.
+2. **Google AI API Key**
+   - Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Create a new API key
+   - Copy the API key
 
----
+### Installation
 
-### And more:
-- Supports image attachments when using a vision model (like gpt-5, grok-4, claude-4, etc.)
-- Supports text file attachments (.txt, .py, .c, etc.)
-- Customizable personality (aka system prompt)
-- User identity aware (OpenAI API and xAI API only)
-- Streamed responses (turns green when complete, automatically splits into separate messages when too long)
-- Hot reloading config (you can change settings without restarting the bot)
-- Displays helpful warnings when appropriate (like "⚠️ Only using last 25 messages" when the customizable message limit is exceeded)
-- Caches message data in a size-managed (no memory leaks) and mutex-protected (no race conditions) global dictionary to maximize efficiency and minimize Discord API calls
-- Fully asynchronous
-- 1 Python file, ~200 lines of code
+#### Option 1: Docker (Recommended)
 
-## Instructions
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd gemini-discord-bot
+```
 
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/jakobdylanc/llmcord
-   ```
+2. Copy and configure the config file:
+```bash
+cp config.yaml config.yaml
+```
 
-2. Create a copy of "config-example.yaml" named "config.yaml" and set it up:
+3. Edit `config.yaml` and add:
+   - Your Discord bot token
+   - Your Discord client ID (from OAuth2 tab)
+   - Your Google AI API key
+   - Admin user IDs
 
-### Discord settings:
+4. Run with Docker:
+```bash
+docker compose up -d
+```
 
-| Setting | Description |
-| --- | --- |
-| **bot_token** | Create a new Discord bot at [discord.com/developers/applications](https://discord.com/developers/applications) and generate a token under the "Bot" tab. Also enable "MESSAGE CONTENT INTENT". |
-| **client_id** | Found under the "OAuth2" tab of the Discord bot you just made. |
-| **status_message** | Set a custom message that displays on the bot's Discord profile.<br /><br />**Max 128 characters.** |
-| **max_text** | The maximum amount of text allowed in a single message, including text from file attachments. (Default: `100,000`) |
-| **max_images** | The maximum number of image attachments allowed in a single message. (Default: `5`)<br /><br />**Only applicable when using a vision model.** |
-| **max_messages** | The maximum number of messages allowed in a reply chain. When exceeded, the oldest messages are dropped. (Default: `25`) |
-| **use_plain_responses** | When set to `true` the bot will use plaintext responses instead of embeds. Plaintext responses have a shorter character limit so the bot's messages may split more often. (Default: `false`)<br /><br />**Also disables streamed responses and warning messages.** |
-| **allow_dms** | Set to `false` to disable direct message access. (Default: `true`) |
-| **permissions** | Configure access permissions for `users`, `roles` and `channels`, each with a list of `allowed_ids` and `blocked_ids`.<br /><br />Control which `users` are admins with `admin_ids`. Admins can change the model with `/model` and DM the bot even if `allow_dms` is `false`.<br /><br />**Leave `allowed_ids` empty to allow ALL in that category.**<br /><br />**Role and channel permissions do not affect DMs.**<br /><br />**You can use [category](https://support.discord.com/hc/en-us/articles/115001580171-Channel-Categories-101) IDs to control channel permissions in groups.** |
+#### Option 2: Local Python
 
-### LLM settings:
+1. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-| Setting | Description |
-| --- | --- |
-| **providers** | Add the LLM providers you want to use, each with a `base_url` and optional `api_key` entry. Popular providers (`openai`, `ollama`, etc.) are already included.<br /><br />**Only supports OpenAI compatible APIs.**<br /><br />**Some providers may need `extra_headers` / `extra_query` / `extra_body` entries for extra HTTP data. See the included `azure-openai` provider for an example.** |
-| **models** | Add the models you want to use in `<provider>/<model>: <parameters>` format (examples are included). When you run `/model` these models will show up as autocomplete suggestions.<br /><br />**Refer to each provider's documentation for supported parameters.**<br /><br />**The first model in your `models` list will be the default model at startup.**<br /><br />**Some vision models may need `:vision` added to the end of their name to enable image support.** |
-| **system_prompt** | Write anything you want to customize the bot's behavior!<br /><br />**Leave blank for no system prompt.**<br /><br />**You can use the `{date}` and `{time}` tags in your system prompt to insert the current date and time, based on your host computer's time zone.** |
+2. Configure `config.yaml` as above
 
 3. Run the bot:
+```bash
+python bot.py
+```
 
-   **No Docker:**
-   ```bash
-   python -m pip install -U -r requirements.txt
-   python llmcord.py
-   ```
+### Bot Invitation
 
-   **With Docker:**
-   ```bash
-   docker compose up
-   ```
+After starting the bot, check the console logs for the invite URL, or construct it manually:
+```
+https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=412317191168&scope=bot
+```
 
-## Notes
+## Configuration Guide
 
-- If you're having issues, try my suggestions [here](https://github.com/jakobdylanc/llmcord/issues/19)
+### Discord Settings
 
-- Only models from OpenAI API and xAI API are "user identity aware" because only they support the "name" parameter in the message object. Hopefully more providers support this in the future.
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `bot_token` | Your Discord bot token | Required |
+| `client_id` | Your Discord application client ID | Required |
+| `status_message` | Custom status message for the bot | "Powered by Gemini 2.5" |
 
-- PRs are welcome :)
+### Gemini Settings
 
-## Star History
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `gemini_api_key` | Your Google AI API key | Required |
+| `default_model` | Default model for new servers | "gemini-2.0-flash-exp" |
+| `default_system_prompt` | Default personality prompt | See config.yaml |
+| `enable_search_grounding` | Enable Google Search integration | true |
 
-<a href="https://star-history.com/#jakobdylanc/llmcord&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=jakobdylanc/llmcord&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=jakobdylanc/llmcord&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=jakobdylanc/llmcord&type=Date" />
-  </picture>
-</a>
+### Limits
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `max_text` | Maximum characters per message | 100,000 |
+| `max_images` | Maximum images per message | 5 |
+| `max_messages` | Maximum messages in conversation | 25 |
+| `max_urls` | Maximum image URLs to extract | 3 |
+| `max_user_description_length` | Maximum user description length | 500 |
+
+### Permissions
+
+Configure who can use the bot:
+
+```yaml
+permissions:
+  users:
+    admin_ids: [123456789]  # Bot admins
+    allowed_ids: []  # Empty = everyone allowed
+    blocked_ids: []  # Specific blocked users
+  roles:
+    allowed_ids: []  # Allowed role IDs
+    blocked_ids: []  # Blocked role IDs
+  channels:
+    allowed_ids: []  # Allowed channel/category IDs
+    blocked_ids: []  # Blocked channel/category IDs
+```
+
+## Commands
+
+### `/model [model]`
+**Admin Only** - View or switch the current Gemini model
+
+- Without argument: Shows current model
+- With argument: Switches to specified model
+- **Scope**: Per-server (each server has its own model setting)
+- **Models**: 
+  - `gemini-2.0-flash-exp` - Fast and efficient
+  - `gemini-exp-1206` - Advanced experimental model
+
+### `/prompt <action> [text]`
+Manage the system prompt
+
+**Actions:**
+- `view` - View current system prompt (anyone can use)
+- `set` - Set new system prompt (admin only)
+- `reset` - Reset to default prompt (admin only)
+
+**Scope**: Per-server
+
+**Examples:**
+```
+/prompt view
+/prompt set You are a friendly coding assistant. Always provide examples.
+/prompt reset
+```
+
+### `/known <action> [description] [user]`
+Manage user personalization
+
+**Actions:**
+- `set` - Set description for yourself or another user
+- `view` - View description for yourself or another user
+- `remove` - Remove description
+
+**Permissions:**
+- Anyone can manage their own description
+- Admins can manage other users' descriptions
+- Anyone can view any user's description
+
+**Examples:**
+```
+/known set I'm a Python developer who loves clean code
+/known view
+/known view @JohnDoe
+/known set Prefers detailed technical explanations @JaneSmith (admin only)
+/known remove
+```
+
+## Usage Examples
+
+### Starting a Conversation
+
+In a server:
+```
+@BotName Hello! Can you help me with Python?
+```
+
+In DMs:
+```
+Hello! Can you help me with Python?
+```
+
+### Continuing a Conversation
+
+Simply reply to any message in the conversation chain:
+```
+[Reply to bot's message] Can you explain that more?
+```
+
+### Using Images
+
+1. **Upload directly**: Attach image to your message
+2. **External URLs**: Include image URLs in your message
+```
+@BotName What's in this image? https://example.com/image.jpg
+```
+
+### Branching Conversations
+
+Create a thread from any message to start a new conversation branch while keeping the original intact.
+
+## Data Storage
+
+### Server Data Structure
+
+Each server's data is stored in `server_data/{server_id}.json`:
+
+```json
+{
+  "model": "gemini-2.0-flash-exp",
+  "system_prompt": "Custom prompt here...",
+  "users": {
+    "user_id": {
+      "display_name": "Username",
+      "description": "User's self-description",
+      "first_seen": "2025-10-07T12:34:56Z",
+      "last_updated": "2025-10-07T12:34:56Z"
+    }
+  }
+}
+```
+
+### DM Data Structure
+
+DM conversations are stored in `server_data/dm_{user_id}.json` with a similar structure.
+
+## Features in Detail
+
+### Google Search Grounding
+
+When enabled, the bot can search the web to provide up-to-date information:
+- Automatically activates when needed
+- Provides source citations
+- Configurable in `config.yaml`
+
+### Automatic User Discovery
+
+The bot automatically:
+1. Detects new users in conversations
+2. Records their display name
+3. Updates names when changed
+4. Tracks first interaction and last update
+
+### Streaming Responses
+
+Responses appear in real-time:
+- Orange embed = generating
+- Green embed = complete
+- Automatically splits long responses
+- Fixed: No more mid-stream cutoffs!
+
+### Image Support
+
+The bot can process images from:
+- Discord attachments (uploaded images)
+- External URLs in messages
+- GIF images (first frame)
+- Multiple images per message
+
+## Troubleshooting
+
+### Bot not responding
+- Check MESSAGE CONTENT INTENT is enabled
+- Verify bot token and API key are correct
+- Check permission settings in config.yaml
+
+### Streaming stops mid-way
+- This bot includes fixes for the original streaming bug
+- If it still occurs, check your internet connection
+- Try using `use_plain_responses: true` as a workaround
+
+### Permission errors
+- Ensure admin IDs are correct in config.yaml
+- Check that the user has the necessary Discord permissions
+
+### Images not working
+- Verify URLs are direct links to images
+- Check that max_images setting isn't set to 0
+- Ensure the Gemini model supports vision
+
+## Privacy & Data
+
+- All data is stored locally in JSON files
+- Users can view and remove their descriptions
+- No data is shared with third parties (except Google AI API)
+- Each server's data is isolated
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+## License
+
+This project is open source. Please check the repository for license details.
+
+## Credits
+
+Based on [llmcord](https://github.com/jakobdylanc/llmcord) by jakobdylanc, rebuilt from the ground up for Google Gemini with enhanced personalization features.
+
+## Support
+
+For issues and questions:
+1. Check this README
+2. Review the configuration examples
+3. Check the console logs for errors
+4. Open an issue on GitHub

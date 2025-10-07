@@ -1,0 +1,24 @@
+{
+  "model": "gemini-2.0-flash",
+  "system_prompt": "You are a helpful coding assistant in this Discord server. Be concise and provide code examples when appropriate. You specialize in Python, JavaScript, and web development.",
+  "users": {
+    "123456789012345678": {
+      "display_name": "JohnDoe",
+      "description": "Senior Python developer. Prefers detailed technical explanations with code examples. Working on machine learning projects.",
+      "first_seen": "2025-10-07T10:30:45.123456",
+      "last_updated": "2025-10-07T15:22:10.654321"
+    },
+    "234567890123456789": {
+      "display_name": "JaneSmith",
+      "description": "Frontend developer learning React. Appreciates beginner-friendly explanations and visual examples.",
+      "first_seen": "2025-10-06T14:15:30.789012",
+      "last_updated": "2025-10-07T11:45:55.345678"
+    },
+    "345678901234567890": {
+      "display_name": "BobWilson",
+      "description": "",
+      "first_seen": "2025-10-07T16:00:00.000000",
+      "last_updated": "2025-10-07T16:00:00.000000"
+    }
+  }
+}

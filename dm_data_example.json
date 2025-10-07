@@ -1,0 +1,10 @@
+{
+  "model": "gemini-2.5-flash",
+  "system_prompt": "You are my personal AI assistant. Be conversational and remember our previous discussions. Help me with coding, brainstorming, and general questions.",
+  "user": {
+    "display_name": "JohnDoe",
+    "description": "Software engineer working on web applications. Interested in AI, cloud computing, and best practices. Prefers concise answers with links to documentation.",
+    "first_seen": "2025-10-05T09:15:20.123456",
+    "last_updated": "2025-10-07T14:30:45.789012"
+  }
+}
