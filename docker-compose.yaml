@@ -2,6 +2,8 @@ services:
   gemini-bot:
     build: .
     restart: unless-stopped
+    environment:
+      TZ: Europe/Budapest
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ./server_data:/app/server_data

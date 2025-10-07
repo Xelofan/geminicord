@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from base64 import b64encode
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +14,7 @@ import discord
 import google.generativeai as genai
 from discord import app_commands
 from discord.ext import commands
+import httpx
 import yaml
 
 logging.basicConfig(
@@ -27,6 +29,9 @@ SERVER_DATA_DIR = Path("server_data")
 
 # Ensure server data directory exists
 SERVER_DATA_DIR.mkdir(exist_ok=True)
+
+# HTTP client for downloading images
+httpx_client = httpx.AsyncClient(timeout=30.0)
 
 
 def get_config(filename: str = "config.yaml") -> dict[str, Any]:
@@ -52,7 +57,7 @@ discord_bot = commands.Bot(intents=intents, activity=activity, command_prefix=No
 @dataclass
 class MsgNode:
     text: Optional[str] = None
-    images: list[str] = field(default_factory=list)  # URLs or base64 data URLs
+    images: list[dict] = field(default_factory=list)  # Proper image parts for Gemini
     role: Literal["user", "model"] = "model"
     user_id: Optional[int] = None
     display_name: Optional[str] = None
@@ -155,6 +160,68 @@ class ServerDataManager:
 
         await ServerDataManager.save_server_data(server_id, data, dm_user_id)
         return data["user"] if server_id is None else data["users"][user_id_str]
+
+
+async def download_and_encode_image(url: str) -> Optional[dict]:
+    """Download an image from URL and return it as a Gemini-compatible part."""
+    try:
+        response = await httpx_client.get(url, follow_redirects=True)
+        if response.status_code != 200:
+            logging.error(f"Failed to download image: {response.status_code}")
+            return None
+        
+        content_type = response.headers.get('content-type', '')
+        
+        # Map content types to Gemini-supported formats
+        mime_type_mapping = {
+            'image/jpeg': 'image/jpeg',
+            'image/jpg': 'image/jpeg',
+            'image/png': 'image/png',
+            'image/gif': 'image/png',  # Convert GIF to PNG for Gemini
+            'image/webp': 'image/webp',
+        }
+        
+        # Get mime type
+        mime_type = None
+        for ct, mt in mime_type_mapping.items():
+            if ct in content_type.lower():
+                mime_type = mt
+                break
+        
+        if not mime_type:
+            logging.error(f"Unsupported image type: {content_type}")
+            return None
+        
+        # For GIFs, we need to convert to PNG (Gemini doesn't support GIF directly)
+        if 'gif' in content_type.lower():
+            try:
+                from PIL import Image
+                import io
+                
+                img = Image.open(io.BytesIO(response.content))
+                # Get first frame
+                img = img.convert('RGB')
+                
+                # Convert to PNG
+                output = io.BytesIO()
+                img.save(output, format='PNG')
+                image_data = output.getvalue()
+                mime_type = 'image/png'
+            except Exception as e:
+                logging.error(f"Failed to convert GIF: {e}")
+                return None
+        else:
+            image_data = response.content
+        
+        # Return as base64-encoded blob
+        return {
+            'mime_type': mime_type,
+            'data': b64encode(image_data).decode('utf-8')
+        }
+    
+    except Exception as e:
+        logging.error(f"Error downloading image from {url}: {e}")
+        return None
 
 
 async def extract_image_urls(text: str, max_urls: int = 3) -> list[str]:
@@ -446,12 +513,20 @@ async def on_message(new_msg: discord.Message):
                     + ["\n".join(filter(None, (embed.title, embed.description))) for embed in curr_msg.embeds]
                 )
                 
-                curr_node.images = [att.url for att in good_attachments[:max_images]]
+                # Download and encode Discord attachments
+                curr_node.images = []
+                for att in good_attachments[:max_images]:
+                    img_part = await download_and_encode_image(att.url)
+                    if img_part:
+                        curr_node.images.append(img_part)
                 
-                # Extract image URLs from text
+                # Extract and download image URLs from text
                 if len(curr_node.images) < max_images:
                     text_image_urls = await extract_image_urls(curr_node.text, max_urls)
-                    curr_node.images.extend(text_image_urls[:max_images - len(curr_node.images)])
+                    for img_url in text_image_urls[:max_images - len(curr_node.images)]:
+                        img_part = await download_and_encode_image(img_url)
+                        if img_part:
+                            curr_node.images.append(img_part)
                 
                 curr_node.role = "model" if curr_msg.author == discord_bot.user else "user"
                 curr_node.user_id = curr_msg.author.id if curr_node.role == "user" else None
@@ -495,12 +570,8 @@ async def on_message(new_msg: discord.Message):
                     text_content = curr_node.text[:max_text]
                 parts.append(text_content)
             
-            # Add images
-            for img_url in curr_node.images[:max_images]:
-                try:
-                    parts.append({"mime_type": "image/jpeg", "data": img_url})
-                except Exception as e:
-                    logging.error(f"Error adding image: {e}")
+            # Add images (they're already in the correct format)
+            parts.extend(curr_node.images[:max_images])
             
             if parts:
                 messages.append({"role": curr_node.role, "parts": parts})
@@ -542,15 +613,10 @@ async def on_message(new_msg: discord.Message):
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
     ]
     
-    tools = None
-    if config.get("enable_search_grounding", True):
-        tools = [{"google_search_retrieval": {"dynamic_retrieval_config": {"mode": "MODE_DYNAMIC", "dynamic_threshold": 0.3}}}]
-    
     model = genai.GenerativeModel(
         model_name=model_name,
         generation_config=generation_config,
         safety_settings=safety_settings,
-        tools=tools,
         system_instruction=system_prompt
     )
     
