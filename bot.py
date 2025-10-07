@@ -275,24 +275,24 @@ async def model_command(interaction: discord.Interaction, model: Optional[str] =
     current_model = data.get("model", config["default_model"])
     
     if model is None:
-        await interaction.response.send_message(f"Current model: `{current_model}`", ephemeral=True)
+        await interaction.response.send_message(f"Current model: `{current_model}`")
         return
     
     if model == current_model:
-        await interaction.response.send_message(f"Already using: `{current_model}`", ephemeral=True)
+        await interaction.response.send_message(f"Already using: `{current_model}`")
         return
     
     # Check if user is admin
     user_is_admin = interaction.user.id in config["permissions"]["users"]["admin_ids"]
     
     if not user_is_admin:
-        await interaction.response.send_message("You don't have permission to change the model.", ephemeral=True)
+        await interaction.response.send_message("You don't have permission to change the model.")
         return
     
     data["model"] = model
     await ServerDataManager.save_server_data(server_id, data, user_id)
     
-    await interaction.response.send_message(f"Model switched to: `{model}`", ephemeral=True)
+    await interaction.response.send_message(f"Model switched to: `{model}`")
     logging.info(f"Model switched to {model} (server: {server_id or f'DM {user_id}'})")
 
 
@@ -315,29 +315,29 @@ async def prompt_command(interaction: discord.Interaction, action: str, text: Op
     
     if action == "view":
         current_prompt = data.get("system_prompt", config["default_system_prompt"])
-        await interaction.response.send_message(f"**Current system prompt:**\n```\n{current_prompt}\n```", ephemeral=True)
+        await interaction.response.send_message(f"**Current system prompt:**\n```\n{current_prompt}\n```")
     
     elif action == "set":
         if not user_is_admin:
-            await interaction.response.send_message("You don't have permission to change the system prompt.", ephemeral=True)
+            await interaction.response.send_message("You don't have permission to change the system prompt.")
             return
         
         if not text:
-            await interaction.response.send_message("Please provide the prompt text.", ephemeral=True)
+            await interaction.response.send_message("Please provide the prompt text.")
             return
         
         data["system_prompt"] = text.strip()
         await ServerDataManager.save_server_data(server_id, data, user_id)
-        await interaction.response.send_message("System prompt updated successfully!", ephemeral=True)
+        await interaction.response.send_message("System prompt updated successfully!")
     
     elif action == "reset":
         if not user_is_admin:
-            await interaction.response.send_message("You don't have permission to reset the system prompt.", ephemeral=True)
+            await interaction.response.send_message("You don't have permission to reset the system prompt.")
             return
         
         data["system_prompt"] = config["default_system_prompt"]
         await ServerDataManager.save_server_data(server_id, data, user_id)
-        await interaction.response.send_message("System prompt reset to default.", ephemeral=True)
+        await interaction.response.send_message("System prompt reset to default.")
 
 
 @discord_bot.tree.command(name="known", description="Manage user personalization")
@@ -361,7 +361,7 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
     
     # Check permissions for managing other users
     if user and user.id != interaction.user.id and not user_is_admin:
-        await interaction.response.send_message("You don't have permission to manage other users.", ephemeral=True)
+        await interaction.response.send_message("You don't have permission to manage other users.")
         return
     
     data = await ServerDataManager.load_server_data(server_id, dm_user_id)
@@ -374,24 +374,24 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
         else:
             user_id_str = str(target_user.id)
             if user_id_str not in data["users"]:
-                await interaction.response.send_message(f"{target_user.mention} hasn't interacted with the bot yet.", ephemeral=True)
+                await interaction.response.send_message(f"{target_user.mention} hasn't interacted with the bot yet.")
                 return
             user_data = data["users"][user_id_str]
             desc = user_data.get("description", "")
             name = user_data.get("display_name", target_user.display_name)
         
         if desc:
-            await interaction.response.send_message(f"**{name}'s description:**\n{desc}", ephemeral=True)
+            await interaction.response.send_message(f"**{name}'s description:**\n{desc}")
         else:
-            await interaction.response.send_message(f"{name} has no description set.", ephemeral=True)
+            await interaction.response.send_message(f"{name} has no description set.")
     
     elif action == "set":
         if not description:
-            await interaction.response.send_message("Please provide a description.", ephemeral=True)
+            await interaction.response.send_message("Please provide a description.")
             return
         
         if len(description) > max_length:
-            await interaction.response.send_message(f"Description too long! Maximum {max_length} characters.", ephemeral=True)
+            await interaction.response.send_message(f"Description too long! Maximum {max_length} characters.")
             return
         
         # Ensure user exists in data
@@ -408,18 +408,18 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
         await ServerDataManager.save_server_data(server_id, data, dm_user_id)
         
         if target_user.id == interaction.user.id:
-            await interaction.response.send_message("Your description has been updated!", ephemeral=True)
+            await interaction.response.send_message("Your description has been updated!")
         else:
-            await interaction.response.send_message(f"Description updated for {target_user.mention}", ephemeral=True)
+            await interaction.response.send_message(f"Description updated for {target_user.mention}")
     
     elif action == "remove":
         if server_id is None:  # DM
             if data.get("user"):
                 data["user"]["description"] = ""
                 await ServerDataManager.save_server_data(server_id, data, dm_user_id)
-                await interaction.response.send_message("Your description has been removed.", ephemeral=True)
+                await interaction.response.send_message("Your description has been removed.")
             else:
-                await interaction.response.send_message("No description to remove.", ephemeral=True)
+                await interaction.response.send_message("No description to remove.")
         else:
             user_id_str = str(target_user.id)
             if user_id_str in data["users"]:
@@ -427,11 +427,11 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
                 await ServerDataManager.save_server_data(server_id, data, dm_user_id)
                 
                 if target_user.id == interaction.user.id:
-                    await interaction.response.send_message("Your description has been removed.", ephemeral=True)
+                    await interaction.response.send_message("Your description has been removed.")
                 else:
-                    await interaction.response.send_message(f"Description removed for {target_user.mention}", ephemeral=True)
+                    await interaction.response.send_message(f"Description removed for {target_user.mention}")
             else:
-                await interaction.response.send_message(f"{target_user.mention} hasn't interacted with the bot yet.", ephemeral=True)
+                await interaction.response.send_message(f"{target_user.mention} hasn't interacted with the bot yet.")
 
 
 @discord_bot.event
