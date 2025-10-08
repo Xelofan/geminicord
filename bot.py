@@ -374,7 +374,7 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
         else:
             user_id_str = str(target_user.id)
             if user_id_str not in data["users"]:
-                await interaction.response.send_message(f"{target_user.mention} hasn't interacted with the bot yet.")
+                await interaction.response.send_message(f"{target_user.display_name} hasn't interacted with the bot yet.")
                 return
             user_data = data["users"][user_id_str]
             desc = user_data.get("description", "")
@@ -410,7 +410,7 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
         if target_user.id == interaction.user.id:
             await interaction.response.send_message("Your description has been updated!")
         else:
-            await interaction.response.send_message(f"Description updated for {target_user.mention}")
+            await interaction.response.send_message(f"Description updated for {target_user.display_name}")
     
     elif action == "remove":
         if server_id is None:  # DM
@@ -429,9 +429,9 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
                 if target_user.id == interaction.user.id:
                     await interaction.response.send_message("Your description has been removed.")
                 else:
-                    await interaction.response.send_message(f"Description removed for {target_user.mention}")
+                    await interaction.response.send_message(f"Description removed for {target_user.display_name}")
             else:
-                await interaction.response.send_message(f"{target_user.mention} hasn't interacted with the bot yet.")
+                await interaction.response.send_message(f"{target_user.display_name} hasn't interacted with the bot yet.")
 
 
 @discord_bot.event
@@ -710,26 +710,25 @@ async def on_message(new_msg: discord.Message):
             
             # Final update
             if not use_plain_responses:
+                # Add any remaining buffer to last message
                 if chunk_buffer:
                     response_contents[-1] += chunk_buffer
                 
-                for i, content in enumerate(response_contents):
-                    embed.description = content
+                # Finalize the last message
+                if response_msgs:
+                    embed.description = response_contents[-1] if response_contents else ""
                     embed.color = discord.Color.dark_green()
-                    
-                    if i < len(response_msgs):
-                        await response_msgs[i].edit(embed=embed)
-                    else:
-                        await reply_helper(embed=embed, silent=True)
+                    await response_msgs[-1].edit(embed=embed)
             else:
                 if chunk_buffer:
                     response_contents[-1] += chunk_buffer
                 
-                for content in response_contents:
-                    if len(response_msgs) == 0 or response_msgs[-1].content:
-                        await reply_helper(content=content)
+                for i, content in enumerate(response_contents):
+                    if i < len(response_msgs):
+                        # Already created during streaming
+                        continue
                     else:
-                        await response_msgs[-1].edit(content=content)
+                        await reply_helper(content=content)
     
     except Exception as e:
         logging.exception("Error generating response")
