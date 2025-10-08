@@ -276,46 +276,6 @@ Responses appear in real-time:
 - Automatically splits long responses
 - Fixed: No more mid-stream cutoffs!
 
-### Image Support
-
-The bot can process images from:
-- Discord attachments (uploaded images)
-- External URLs in messages
-- GIF images (first frame)
-- Multiple images per message
-
-## Troubleshooting
-
-### Bot not responding
-- Check MESSAGE CONTENT INTENT is enabled
-- Verify bot token and API key are correct
-- Check permission settings in config.yaml
-
-### Streaming stops mid-way
-- This bot includes fixes for the original streaming bug
-- If it still occurs, check your internet connection
-- Try using `use_plain_responses: true` as a workaround
-
-### Permission errors
-- Ensure admin IDs are correct in config.yaml
-- Check that the user has the necessary Discord permissions
-
-### Images not working
-- Verify URLs are direct links to images
-- Check that max_images setting isn't set to 0
-- Ensure the Gemini model supports vision
-
-## Privacy & Data
-
-- All data is stored locally in JSON files
-- Users can view and remove their descriptions
-- No data is shared with third parties (except Google AI API)
-- Each server's data is isolated
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues and pull requests.
-
 ## License
 
 This project is open source. Please check the repository for license details.
@@ -323,11 +283,3 @@ This project is open source. Please check the repository for license details.
 ## Credits
 
 Based on [llmcord](https://github.com/jakobdylanc/llmcord) by jakobdylanc, rebuilt from the ground up for Google Gemini with enhanced personalization features.
-
-## Support
-
-For issues and questions:
-1. Check this README
-2. Review the configuration examples
-3. Check the console logs for errors
-4. Open an issue on GitHub
