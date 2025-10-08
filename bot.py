@@ -243,20 +243,25 @@ def build_system_prompt(base_prompt: str, server_data: dict, server_name: Option
     if server_name:
         prompt += f"\n\nCurrent server: {server_name}"
     
-    # Add known users info
+    # Add ALL known users info from the server, not just those in conversation
     users_info = []
-    for user_id in conversation_user_ids:
-        user_id_str = str(user_id)
-        if server_data.get("users") and user_id_str in server_data["users"]:
-            user = server_data["users"][user_id_str]
-            if user.get("description"):
-                users_info.append(f"- <@{user_id}> (Display: {user['display_name']}): {user['description']}")
-        elif server_data.get("user") and user.get("description"):  # DM
-            users_info.append(f"- {user['display_name']}: {user['description']}")
+    
+    if server_data.get("users"):  # Server with multiple users
+        for user_id_str, user_data in server_data["users"].items():
+            if user_data.get("description"):
+                display_name = user_data.get("display_name", "Unknown")
+                # Mark users in current conversation
+                in_conversation = int(user_id_str) in conversation_user_ids
+                marker = " (in conversation)" if in_conversation else ""
+                users_info.append(f"- <@{user_id_str}> (Display: {display_name}){marker}: {user_data['description']}")
+    elif server_data.get("user"):  # DM
+        user_data = server_data["user"]
+        if user_data.get("description"):
+            users_info.append(f"- {user_data['display_name']}: {user_data['description']}")
     
     if users_info:
-        prompt += "\n\nKnown users in this conversation:\n" + "\n".join(users_info)
-        prompt += "\n\nWhen addressing users, use their display names naturally in conversation."
+        prompt += "\n\nKnown users in this server:\n" + "\n".join(users_info)
+        prompt += "\n\nWhen addressing users, use their display names naturally in conversation. You can reference information about any user listed above, even if they're not currently in the conversation."
     
     return prompt
 
