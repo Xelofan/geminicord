@@ -660,29 +660,49 @@ async def on_message(new_msg: discord.Message):
                         chunk_buffer += chunk.text
                         curr_content += chunk.text
                         
-                        # Check if we need to start a new message
-                        if response_contents == [] or len(response_contents[-1] + chunk_buffer) > max_message_length:
-                            if response_contents:
-                                response_contents.append("")
-                            else:
-                                response_contents.append(chunk_buffer)
-                                chunk_buffer = ""
-                        
                         current_time = datetime.now().timestamp()
                         time_since_edit = current_time - last_edit_time
                         
-                        # Update message periodically
-                        if not use_plain_responses and (time_since_edit >= EDIT_DELAY_SECONDS or response_msgs == []):
-                            if response_msgs == []:
-                                embed.description = response_contents[-1] + chunk_buffer + " ⚪"
-                                embed.color = discord.Color.orange()
-                                await reply_helper(embed=embed, silent=True)
-                            else:
-                                embed.description = response_contents[-1] + chunk_buffer + " ⚪"
+                        # Check if we need to start a new message
+                        if response_contents and len(response_contents[-1] + chunk_buffer) > max_message_length:
+                            # Finalize current message
+                            if not use_plain_responses:
+                                embed.description = response_contents[-1]
+                                embed.color = discord.Color.dark_green()
                                 await response_msgs[-1].edit(embed=embed)
                             
-                            last_edit_time = current_time
+                            # Start new message with accumulated buffer
+                            response_contents.append(chunk_buffer)
                             chunk_buffer = ""
+                            
+                            if not use_plain_responses:
+                                embed = discord.Embed()  # Fresh embed for new message
+                                embed.description = response_contents[-1] + " ⚪"
+                                embed.color = discord.Color.orange()
+                                await reply_helper(embed=embed, silent=True)
+                                last_edit_time = current_time
+                            
+                            continue
+                        
+                        # Initialize first message
+                        if response_contents == []:
+                            response_contents.append(chunk_buffer)
+                            chunk_buffer = ""
+                            
+                            if not use_plain_responses:
+                                embed.description = response_contents[-1] + " ⚪"
+                                embed.color = discord.Color.orange()
+                                await reply_helper(embed=embed, silent=True)
+                                last_edit_time = current_time
+                            
+                            continue
+                        
+                        # Update message periodically
+                        if not use_plain_responses and time_since_edit >= EDIT_DELAY_SECONDS:
+                            embed.description = response_contents[-1] + chunk_buffer + " ⚪"
+                            embed.color = discord.Color.orange()
+                            await response_msgs[-1].edit(embed=embed)
+                            last_edit_time = current_time
                 
                 except Exception as e:
                     logging.error(f"Error processing chunk: {e}")
