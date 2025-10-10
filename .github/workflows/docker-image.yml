@@ -79,34 +79,73 @@ jobs:
         build-args: |
           BUILD_DATE=${{ steps.date.outputs.DATE }}
 
-  # deploy:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/master'
-  #   env:
-  #     BUILD_DATE: ${{ needs.build-and-push.outputs.build_date }}
-  #   steps:
-  #     - name: Install Tailscale
-  #       run: |
-  #         curl -fsSL https://tailscale.com/install.sh | sh
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    env:
+      BUILD_DATE: ${{ needs.build-and-push.outputs.build_date }}
+    steps:
+      - name: Install Tailscale
+        run: |
+          curl -fsSL https://tailscale.com/install.sh | sh
 
-  #     - name: Install kubectl
-  #       run: |
-  #         curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-  #         chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
-  #     - name: Authenticate Tailscale
-  #       run: |
-  #         sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-routes --hostname github-deployer
+      - name: Authenticate Tailscale
+        run: |
+          sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-routes --hostname github-deployer
 
-  #     - name: Configure kubeconfig
-  #       run: |
-  #         echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > kubeconfig
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > kubeconfig
 
-  #     - name: Deploy to k3s
-  #       run: |
-  #         IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_DATE }}
-  #         IMAGE="${IMAGE,,}"
-  #         KUBECONFIG=$PWD/kubeconfig kubectl set image deployment/embedbot embedbot="$IMAGE"
-  #         KUBECONFIG=$PWD/kubeconfig kubectl annotate deployment/embedbot kubernetes.io/change-cause="Update image to $IMAGE" --overwrite
-  #         KUBECONFIG=$PWD/kubeconfig kubectl rollout status deployment/embedbot
+      - name: Deploy to k3s
+        run: |
+          IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_DATE }}
+          IMAGE="${IMAGE,,}"
+          KUBECONFIG=$PWD/kubeconfig kubectl set image deployment/embedbot embedbot="$IMAGE"
+          KUBECONFIG=$PWD/kubeconfig kubectl annotate deployment/embedbot kubernetes.io/change-cause="Update image to $IMAGE" --overwrite
+          KUBECONFIG=$PWD/kubeconfig kubectl rollout status deployment/embedbot
+
+      - name: Send notification
+        run: |
+          curl \
+          -H "Title: GeminiBot Updated" \
+          -H "Priority: low" \
+          -H "Tags: white_check_mark" \
+          -d "GeminiBot version ${{ env.BUILD_DATE }} has been deployed." \
+          ${{ secrets.NTFY_TOPIC }} | sed -E 's/("topic"[[:space:]]*:[[:space:]]*)"[^"]*"/\1"[REDACTED]"/'
+
+  notify-build:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && needs.build-and-push.result != 'success' && needs.build-and-push.result != 'skipped'
+    steps:
+      - name: Send build failure notification
+        run: |
+          curl \
+              -H "Title: GeminiBot Build FAILED" \
+              -H "Priority: high" \
+              -H "Tags: warning" \
+              -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              -d "Build ${{ needs.build-and-push.outputs.build_date }} failed (job result: ${{ needs.build-and-push.result }}). See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Tap to open." \
+              ${{ secrets.NTFY_TOPIC }} | sed -E 's/("topic"[[:space:]]*:[[:space:]]*)"[^"]*"/\1"[REDACTED]"/'
+
+  notify-deploy:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && (needs.deploy.result == 'failure' || needs.deploy.result == 'cancelled')
+    steps:
+      - name: Send deploy failure notification
+        run: |
+          curl \
+              -H "Title: GeminiBot Deployment FAILED" \
+              -H "Priority: high" \
+              -H "Tags: warning" \
+              -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              -d "EmbedBot version ${{ env.BUILD_DATE }} deployment failed. (job result: ${{ needs.deploy.result }}). See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Tap to open." \
+              ${{ secrets.NTFY_TOPIC }} | sed -E 's/("topic"[[:space:]]*:[[:space:]]*)"[^"]*"/\1"[REDACTED]"/'
