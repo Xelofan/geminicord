@@ -640,7 +640,8 @@ async def on_message(new_msg: discord.Message):
     
     async def reply_helper(**reply_kwargs):
         reply_target = new_msg if not response_msgs else response_msgs[-1]
-        response_msg = await reply_target.reply(**reply_kwargs, silent=True)
+        reply_kwargs.setdefault("silent", True)
+        response_msg = await reply_target.reply(**reply_kwargs)
         response_msgs.append(response_msg)
         
         msg_nodes[response_msg.id] = MsgNode(parent_msg=new_msg)
