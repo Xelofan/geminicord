@@ -280,24 +280,24 @@ async def model_command(interaction: discord.Interaction, model: Optional[str] =
     current_model = data.get("model", config["default_model"])
     
     if model is None:
-        await interaction.response.send_message(f"Current model: `{current_model}`")
+        await interaction.response.send_message(f"Current model: `{current_model}`", silent=True)
         return
     
     if model == current_model:
-        await interaction.response.send_message(f"Already using: `{current_model}`")
+        await interaction.response.send_message(f"Already using: `{current_model}`", silent=True)
         return
     
     # Check if user is admin
     user_is_admin = interaction.user.id in config["permissions"]["users"]["admin_ids"]
     
     if not user_is_admin:
-        await interaction.response.send_message("You don't have permission to change the model.")
+        await interaction.response.send_message("You don't have permission to change the model.", silent=True)
         return
     
     data["model"] = model
     await ServerDataManager.save_server_data(server_id, data, user_id)
     
-    await interaction.response.send_message(f"Model switched to: `{model}`")
+    await interaction.response.send_message(f"Model switched to: `{model}`", silent=True)
     logging.info(f"Model switched to {model} (server: {server_id or f'DM {user_id}'})")
 
 
@@ -320,29 +320,29 @@ async def prompt_command(interaction: discord.Interaction, action: str, text: Op
     
     if action == "view":
         current_prompt = data.get("system_prompt", config["default_system_prompt"])
-        await interaction.response.send_message(f"**Current system prompt:**\n```\n{current_prompt}\n```")
+        await interaction.response.send_message(f"**Current system prompt:**\n```\n{current_prompt}\n```", silent=True)
     
     elif action == "set":
         if not user_is_admin:
-            await interaction.response.send_message("You don't have permission to change the system prompt.")
+            await interaction.response.send_message("You don't have permission to change the system prompt.", silent=True)
             return
         
         if not text:
-            await interaction.response.send_message("Please provide the prompt text.")
+            await interaction.response.send_message("Please provide the prompt text.", silent=True)
             return
         
         data["system_prompt"] = text.strip()
         await ServerDataManager.save_server_data(server_id, data, user_id)
-        await interaction.response.send_message("System prompt updated successfully!")
+        await interaction.response.send_message("System prompt updated successfully!", silent=True)
     
     elif action == "reset":
         if not user_is_admin:
-            await interaction.response.send_message("You don't have permission to reset the system prompt.")
+            await interaction.response.send_message("You don't have permission to reset the system prompt.", silent=True)
             return
         
         data["system_prompt"] = config["default_system_prompt"]
         await ServerDataManager.save_server_data(server_id, data, user_id)
-        await interaction.response.send_message("System prompt reset to default.")
+        await interaction.response.send_message("System prompt reset to default.", silent=True)
 
 
 @discord_bot.tree.command(name="known", description="Manage user personalization")
@@ -379,24 +379,24 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
         else:
             user_id_str = str(target_user.id)
             if user_id_str not in data["users"]:
-                await interaction.response.send_message(f"{target_user.display_name} hasn't interacted with the bot yet.")
+                await interaction.response.send_message(f"{target_user.display_name} hasn't interacted with the bot yet.", silent=True)
                 return
             user_data = data["users"][user_id_str]
             desc = user_data.get("description", "")
             name = user_data.get("display_name", target_user.display_name)
         
         if desc:
-            await interaction.response.send_message(f"**{name}'s description:**\n{desc}")
+            await interaction.response.send_message(f"**{name}'s description:**\n{desc}", silent=True)
         else:
-            await interaction.response.send_message(f"{name} has no description set.")
+            await interaction.response.send_message(f"{name} has no description set.", silent=True)
     
     elif action == "set":
         if not description:
-            await interaction.response.send_message("Please provide a description.")
+            await interaction.response.send_message("Please provide a description.", silent=True)
             return
         
         if len(description) > max_length:
-            await interaction.response.send_message(f"Description too long! Maximum {max_length} characters.")
+            await interaction.response.send_message(f"Description too long! Maximum {max_length} characters.", silent=True)
             return
         
         # Ensure user exists in data
@@ -413,18 +413,18 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
         await ServerDataManager.save_server_data(server_id, data, dm_user_id)
         
         if target_user.id == interaction.user.id:
-            await interaction.response.send_message("Your description has been updated!")
+            await interaction.response.send_message("Your description has been updated!", silent=True)
         else:
-            await interaction.response.send_message(f"Description updated for {target_user.display_name}")
+            await interaction.response.send_message(f"Description updated for {target_user.display_name}", silent=True)
     
     elif action == "remove":
         if server_id is None:  # DM
             if data.get("user"):
                 data["user"]["description"] = ""
                 await ServerDataManager.save_server_data(server_id, data, dm_user_id)
-                await interaction.response.send_message("Your description has been removed.")
+                await interaction.response.send_message("Your description has been removed.", silent=True)
             else:
-                await interaction.response.send_message("No description to remove.")
+                await interaction.response.send_message("No description to remove.", silent=True)
         else:
             user_id_str = str(target_user.id)
             if user_id_str in data["users"]:
@@ -432,11 +432,11 @@ async def known_command(interaction: discord.Interaction, action: str, descripti
                 await ServerDataManager.save_server_data(server_id, data, dm_user_id)
                 
                 if target_user.id == interaction.user.id:
-                    await interaction.response.send_message("Your description has been removed.")
+                    await interaction.response.send_message("Your description has been removed.", silent=True)
                 else:
-                    await interaction.response.send_message(f"Description removed for {target_user.display_name}")
+                    await interaction.response.send_message(f"Description removed for {target_user.display_name}", silent=True)
             else:
-                await interaction.response.send_message(f"{target_user.display_name} hasn't interacted with the bot yet.")
+                await interaction.response.send_message(f"{target_user.display_name} hasn't interacted with the bot yet.", silent=True)
 
 
 @discord_bot.event
@@ -640,7 +640,7 @@ async def on_message(new_msg: discord.Message):
     
     async def reply_helper(**reply_kwargs):
         reply_target = new_msg if not response_msgs else response_msgs[-1]
-        response_msg = await reply_target.reply(**reply_kwargs)
+        response_msg = await reply_target.reply(**reply_kwargs, silent=True)
         response_msgs.append(response_msg)
         
         msg_nodes[response_msg.id] = MsgNode(parent_msg=new_msg)
