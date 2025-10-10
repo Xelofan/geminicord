@@ -50,7 +50,7 @@ data_locks = {}  # Locks for each server's data file
 
 intents = discord.Intents.default()
 intents.message_content = True
-activity = discord.CustomActivity(name=(config.get("status_message") or "Powered by Gemini 2.5")[:128])
+activity = discord.CustomActivity(name=(config.get("status_message") or "Powered by Gemini")[:128])
 discord_bot = commands.Bot(intents=intents, activity=activity, command_prefix=None)
 
 
