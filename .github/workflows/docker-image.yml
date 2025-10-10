@@ -107,9 +107,9 @@ jobs:
         run: |
           IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_DATE }}
           IMAGE="${IMAGE,,}"
-          KUBECONFIG=$PWD/kubeconfig kubectl set image deployment/embedbot embedbot="$IMAGE"
-          KUBECONFIG=$PWD/kubeconfig kubectl annotate deployment/embedbot kubernetes.io/change-cause="Update image to $IMAGE" --overwrite
-          KUBECONFIG=$PWD/kubeconfig kubectl rollout status deployment/embedbot
+          KUBECONFIG=$PWD/kubeconfig kubectl set image deployment/geminibot geminibot="$IMAGE"
+          KUBECONFIG=$PWD/kubeconfig kubectl annotate deployment/geminibot kubernetes.io/change-cause="Update image to $IMAGE" --overwrite
+          KUBECONFIG=$PWD/kubeconfig kubectl rollout status deployment/geminibot
 
       - name: Send notification
         run: |
@@ -147,5 +147,5 @@ jobs:
               -H "Priority: high" \
               -H "Tags: warning" \
               -H "Click: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              -d "EmbedBot version ${{ env.BUILD_DATE }} deployment failed. (job result: ${{ needs.deploy.result }}). See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Tap to open." \
+              -d "GeminiBot version ${{ env.BUILD_DATE }} deployment failed. (job result: ${{ needs.deploy.result }}). See: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} Tap to open." \
               ${{ secrets.NTFY_TOPIC }} | sed -E 's/("topic"[[:space:]]*:[[:space:]]*)"[^"]*"/\1"[REDACTED]"/'
